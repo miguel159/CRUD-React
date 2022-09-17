@@ -1,167 +1,140 @@
-import React, { useState } from 'react';
-import { isElementOfType } from 'react-dom/test-utils';
-import shortid from 'shortid';
+import React, { useEffect, useState } from "react";
+import shortid from "shortid";
 
 function App() {
+  const [homeWork, setHomeWork] = useState("");
+  const [listHomeWork, setListHomeWork] = useState([]);
+  const [listEditWork, setListEditWork] = useState([]);
+  const [error, setError] = useState(null);
 
-  /*----- guarda la tarea ingresada en setTarea en el evento onChange -----*/
-  const [tarea, setTarea] = useState ('')
-  const [tareas, setTareas] = useState ([])
-  const [modoEdicion, setModoEdicion] = useState(false)
-  const [id, setId] = useState('')
-  const [error, setError] = useState(null)
-
-
-  const agregarTarea = e => {
-    e.preventDefault()
-
-    /*----- valida el campo vacio  -----*/
-    if (!tarea.trim()){ 
-      console.log('Elemento Vacio')
-      setError('Escriba algo por favor')
-      return
-    } 
-    console.log(tarea)
-
-
-    /*----- propiedad/valor  y shortid(libreria de id aleatorio) -----*/
-    setTareas ([
-      ...tareas,
-      { id: shortid.generate() , nombreTarea:tarea}   
-    ]) 
-
-    /*----- Limpia el campo del formulario-----*/
-    setTarea ('') 
-
-    setError(null)
-  }
-
-  /*----- Funcion eliminar -----*/
-  const eliminarTarea = id => {
-    //console.log(id)
-    /*------ Si item.id es igual de nuestro id, se quedara fuera 
-    y lo que son compatibles se guarda
-    en setTareas en arrayFiltrado -----*/
-    const arrayFiltrado = tareas.filter(item => item.id !== id)
-    setTareas(arrayFiltrado)
-  }
-
-  const editar = item => {
-    console.log(item)
-    setModoEdicion(true)
-    setTarea(item.nombreTarea)
-    setId(item.id)
-  }
-
-  const editarTarea = e => {
-    e.preventDefault()
-    if (!tarea.trim()){ 
-      console.log('Elemento Vacio')
-      return
+  const createItem = (e) => {
+    if (!homeWork.trim()) {
+      setError("Escriba algo por favor");
+      return;
     }
+    setListHomeWork([
+      ...listHomeWork,
+      { id: shortid.generate(), name: homeWork, type: "show" },
+    ]);
+    setHomeWork("");
+    setError(null);
+  };
 
-    const arrayEditado = tareas.map(
-      item => item.id === id ? {id:id, nombreTarea:tarea}: item
-      )
+  const deleteHomeWork = (id) => {
+    const data = listHomeWork.filter((item) => item.id !== id);
+    setListHomeWork(data);
+  };
 
-      setTareas(arrayEditado)
-      setModoEdicion(false)
-      setTarea('')
-      setId('')
-      setError(null)
-  }
+  const editHomeWork = (item, index) => {
+    const data = [...listHomeWork];
+    data[index].type = "edit";
+    setListHomeWork([...data]);
+  };
+
+  const saveHomeWork = (item, index, value) => {
+    const data = [...listEditWork];
+    const dataHomeWork = [...listHomeWork];
+
+    if (!data[index].value.trim()) {
+      return;
+    }
+    dataHomeWork[index].type = "show";
+    dataHomeWork[index].name = data[index].value;
+    setListHomeWork([...dataHomeWork]);
+  };
+
+  const cancelEdit = (item, index) => {
+    const data = [...listHomeWork];
+    data[index].type = "show";
+    setListHomeWork([...data]);
+  };
+
+  useEffect(() => {
+    if (listHomeWork.length > 0) {
+      const data = listHomeWork.map((el) => ({ value: el.name }));
+      setListEditWork([...data]);
+    }
+  }, [listHomeWork]);
+
+  const actionHomeWork = (item, index) => {
+    if (item.type === "show") deleteHomeWork(item.id);
+    else cancelEdit(item.id, index);
+  };
+  const changeListHomeWorkEdit = (item, index, value) => {
+    const data = [...listEditWork];
+    data[index].value = value;
+    setListEditWork([...data]);
+  };
 
   return (
     <div className="container mt-5">
-      <h1 className="text-center">CRUD Simple</h1>      
-      <hr/>
+      <h1 className="text-center">CRUD Simple</h1>
+      <hr />
       <div className="row">
         <div className="col-8">
           <h4 className="text-center"> Lista de Tareas</h4>
           <ul className="list-group">
-            {
-               tareas.length === 0 ? (
-                <div className="list-group-item">No hay tareas</div>
-               ) :  (
-                tareas.map(item => (
-                  <li className="list-group-item" key={item.id}>
-                    <span className="lead">{item.nombreTarea}</span>
-  
-                    <button 
-                      className="btn btn-danger btn-sm float-right mx-2"
-                      onClick={() => eliminarTarea(item.id)}
-                    >
-                      Eliminar
-                    </button>
-  
-                    <button 
-                      className="btn btn-warning btn-sm float-right"
-                      onClick={() => editar(item)}
-                    >
-                      Editar
-                    </button>
-                  </li>
-                ))
-               )             
-            }
-
-            
-
+            {listHomeWork.length === 0 && (
+              <div className="list-group-item">No hay tareas</div>
+            )}
+            {listHomeWork.map((item, index) => (
+              <li className="list-group-item" key={item.id}>
+                {item.type === "show" && (
+                  <span className="lead">{item.name}</span>
+                )}
+                {item.type === "edit" && (
+                  <input
+                    type="text"
+                    className="form-control mb-2"
+                    placeholder="Ingresar Tarea"
+                    onChange={(e) =>
+                      changeListHomeWorkEdit(item, index, e.target.value)
+                    }
+                    value={listEditWork[index].value}
+                  />
+                )}
+                <button
+                  className="btn btn-danger btn-sm float-right mx-2"
+                  onClick={() => actionHomeWork(item, index)}
+                >
+                  {item.type === "show" ? "Eliminar" : "Cancelar"}
+                </button>
+                <button
+                  className="btn btn-warning btn-sm float-right"
+                  onClick={() =>
+                    item.type === "show"
+                      ? editHomeWork(item.id, index)
+                      : saveHomeWork(item, index)
+                  }
+                >
+                  {item.type === "show" ? "Editar" : "Guardar"}
+                </button>
+              </li>
+            ))}
           </ul>
         </div>
         <div className="col-4">
-          <h4 className="text-center"> 
-            {
-              modoEdicion ? 'Editar Tarea' : 'Agregar Tarea'
-            }
-          </h4>
-          <form onSubmit={modoEdicion ? editarTarea : agregarTarea}>
-            {
-              error ? <span className="text-danger">{error}</span> : null
-            }
-            <input 
-              type="text" 
-              className="form-control mb-2" 
+          <h4 className="text-center">Agregar Tarea</h4>
+          <div>
+            {error ? <span className="text-danger">{error}</span> : null}
+            <input
+              type="text"
+              className="form-control mb-2"
               placeholder="Ingresar Tarea"
-              onChange={ e => setTarea (e.target.value)}
-              /*----- limpiar campo de formularios -----*/
-              value={tarea} 
+              onChange={(e) => setHomeWork(e.target.value)}
+              value={homeWork}
             />
-            {
-              modoEdicion ? (
-                <button className="btn btn-warning btn-block" type="submit">Editar</button>  //V
-                ) : (
-                  <button className="btn btn-dark btn-block" type="submit">Agregar</button>  //F
-                )
-              }
-          </form>
+            <button
+              className="btn btn-dark btn-block"
+              type="submit"
+              onClick={createItem}
+            >
+              Agregar
+            </button>
+          </div>
         </div>
       </div>
-      <hr/>
-      <div className="row">
-        <div className="row-8">
-          <h4 className="text-center">Listar</h4>
-          <ul className="list-group">
-            <li className="list-group-item">
-              <button
-                className="btn btn-danger btn-sm float-right mx-2"
-              >
-                Eliminar
-              </button>
-
-              <button
-                className="btn btn-warning btn-sm float-right"
-              >
-                Editar
-              </button>
-            </li>
-          </ul>
-        </div>
-        <div className="col-4">
-          <h4 className="text-center">Agregaaar</h4>
-        </div>
-      </div>
-
+      <hr />
     </div>
   );
 }
